@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenDino AI Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fredoka+One&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" id="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="dino-logo">
+                    <i class="fas fa-dragon"></i>
+                </div>
+                <div class="logo-text">
+                    <h1 class="title">GreenDino</h1>
+                    <div class="subtitle">
+                        <i class="fas fa-heart"></i>
+                        <span>Baik • Ramah • Pintar</span>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="history-btn" id="history-btn" title="Riwayat Chat">
+                    <i class="fas fa-history"></i>
+                </button>
+                <button class="api-btn" id="api-btn" title="Kelola API Key">
+                    <i class="fas fa-key"></i>
+                </button>
+                <button class="menu-btn" id="menu-btn" title="Menu">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chat-container">
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-dragon"></i>
+                </div>
+                <div class="message-content">
+                    <p>🦕 <strong>Halo! Saya GreenDino AI Assistant!</strong></p>
+                    <p>Saya siap membantu Anda dengan berbagai pertanyaan dan tugas.</p>
+                    <p>🔑 API Key sudah aktif dan siap digunakan.</p>
+                    <div class="message-time">Baru saja</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-container">
+                <textarea class="message-input" id="message-input" placeholder="Tulis pesan untuk GreenDino..."></textarea>
+                <div class="input-buttons">
+                    <button class="send-btn-mini" id="send-btn-mini" title="Kirim pesan">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-features">
+                    <button class="feature-btn" id="clear-btn">
+                        <i class="fas fa-broom"></i> Bersihkan
+                    </button>
+                    <button class="feature-btn" id="voice-btn">
+                        <i class="fas fa-microphone"></i> Suara
+                    </button>
+                    <button class="feature-btn" id="help-btn">
+                        <i class="fas fa-question-circle"></i> Bantuan
+                    </button>
+                </div>
+            </div>
+            <button class="send-btn-main" id="send-btn-main">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <!-- Copy Script Button -->
+        <button class="copy-script-btn" id="copy-script-btn">
+            <i class="fas fa-code"></i> Copy Script
+        </button>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Dibuat dengan ❤️ oleh <a href="#" target="_blank">DinoIjoNPC</a> | GreenDino AI Assistant v2.0</p>
+        </div>
+
+        <!-- History Panel -->
+        <div class="panel" id="history-panel">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-history"></i> Riwayat Percakapan</h2>
+                <button class="close-panel" id="close-history-panel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="history-list" id="history-list">
+                <div class="history-item active">
+                    <div class="history-title">Percakapan Saat Ini</div>
+                    <div class="history-preview">🦕 Halo! Saya GreenDino AI Assistant!</div>
+                    <div class="history-date"><i class="far fa-clock"></i> Baru saja</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Key Panel -->
+        <div class="panel" id="api-panel">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-key"></i> Pengaturan API</h2>
+                <button class="close-panel" id="close-api-panel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="api-section">
+                <div class="api-title">
+                    <i class="fas fa-cog"></i> Konfigurasi API Key
+                </div>
+                <div class="api-input-container">
+                    <input type="password" class="api-input" id="api-key-input" placeholder="Masukkan API Key DeepSeek Anda" value="sk-3206ed4039424e71bf9f41325161fcd1">
+                    <button class="btn btn-primary" id="save-api-btn">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+                <div class="api-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>API Key default sudah terisi. Anda bisa menggantinya.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Panel -->
+        <div class="panel" id="menu-panel">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-bars"></i> Menu GreenDino</h2>
+                <button class="close-panel" id="close-menu-panel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="menu-options">
+                <div class="menu-option" id="change-theme-btn">
+                    <div class="menu-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="menu-text">
+                        <div class="menu-title">Ganti Tema</div>
+                        <div class="menu-desc">Ubah tema antarmuka</div>
+                    </div>
+                </div>
+                <div class="menu-option" id="export-chat-btn">
+                    <div class="menu-icon">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                    <div class="menu-text">
+                        <div class="menu-title">Ekspor Chat</div>
+                        <div class="menu-desc">Simpan percakapan Anda</div>
+                    </div>
+                </div>
+                <div class="menu-option" id="settings-btn">
+                    <div class="menu-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="menu-text">
+                        <div class="menu-title">Pengaturan</div>
+                        <div class="menu-desc">Atur preferensi AI</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+                        </html>
