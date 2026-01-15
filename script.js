@@ -1,74 +1,130 @@
 // ==================== KONFIGURASI API ====================
-// Gunakan API Key OpenAI Anda di sini
-// Default: API Key yang Anda berikan
 const DEFAULT_API_KEY = "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";
-
 let API_KEY = DEFAULT_API_KEY;
-const API_URL = "https://api.openai.com/v1/chat/completions"; // OpenAI API
+const API_URL = "https://api.openai.com/v1/chat/completions";
 
 // ==================== DOM ELEMENTS ====================
+// Main elements
 const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
-const sendBtn = document.getElementById('send-btn'); // HANYA 1 TOMBOL SEND
-const clearBtn = document.getElementById('clear-btn');
-const helpBtn = document.getElementById('help-btn');
-const testApiBtn = document.getElementById('test-api-btn');
+const sendBtn = document.getElementById('send-btn');
+
+// Header buttons
+const historyBtn = document.getElementById('history-btn');
 const apiBtn = document.getElementById('api-btn');
+const menuBtn = document.getElementById('menu-btn');
+
+// Feature buttons
+const clearBtn = document.getElementById('clear-btn');
+const voiceBtn = document.getElementById('voice-btn');
+const helpBtn = document.getElementById('help-btn');
+const exampleBtn = document.getElementById('example-btn');
+const copyScriptBtn = document.getElementById('copy-script-btn');
+
+// API panel elements
 const apiPanel = document.getElementById('api-panel');
-const closeApiPanel = document.getElementById('close-api-panel');
+const closeApiBtn = document.getElementById('close-api');
 const apiKeyInput = document.getElementById('api-key-input');
 const saveApiBtn = document.getElementById('save-api-btn');
+const testApiBtn = document.getElementById('test-api-btn');
+const showKeyBtn = document.getElementById('show-key-btn');
+const resetKeyBtn = document.getElementById('reset-key-btn');
 const apiStatus = document.getElementById('api-status');
-const useDefaultKeyBtn = document.getElementById('use-default-key');
-const toggleKeyVisibilityBtn = document.getElementById('toggle-key-visibility');
+
+// History panel elements
+const historyPanel = document.getElementById('history-panel');
+const closeHistoryBtn = document.getElementById('close-history');
+const historyList = document.getElementById('history-list');
+
+// Menu panel elements
+const menuPanel = document.getElementById('menu-panel');
+const closeMenuBtn = document.getElementById('close-menu');
+const themeBtn = document.getElementById('theme-btn');
+const exportBtn = document.getElementById('export-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const aboutBtn = document.getElementById('about-btn');
+const clearAllBtn = document.getElementById('clear-all-btn');
+const refreshBtn = document.getElementById('refresh-btn');
 
 // ==================== STATE VARIABLES ====================
 let isProcessing = false;
-let chatMessages = [];
-let isApiKeyVisible = false;
+let chatHistory = [];
+let currentChatId = null;
+let isKeyVisible = false;
 
-// ==================== FUNGSI UTAMA ====================
-
-// Initialize
-function init() {
-    // Load API key from localStorage if exists
-    const savedApiKey = localStorage.getItem('greenDinoApiKey');
-    if (savedApiKey) {
-        API_KEY = savedApiKey;
-        apiKeyInput.value = savedApiKey;
-    } else {
-        API_KEY = DEFAULT_API_KEY;
-        apiKeyInput.value = DEFAULT_API_KEY;
-        localStorage.setItem('greenDinoApiKey', DEFAULT_API_KEY);
-    }
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('GreenDino initializing...');
     
-    // Add initial message
-    addMessageToUI(
-        "🦕 <strong>Halo! Saya GreenDino AI Assistant!</strong>\n\n" +
-        "Saya menggunakan OpenAI API (ChatGPT) untuk membantu Anda.\n\n" +
-        "🔑 API Key sudah aktif dan siap digunakan.\n" +
-        "Kirim pesan untuk memulai percakapan!",
-        'ai'
-    );
+    // Initialize chat
+    initChat();
     
-    // Adjust textarea height
-    adjustTextareaHeight();
+    // Initialize API key
+    initApiKey();
+    
+    // Setup all event listeners
+    setupEventListeners();
     
     // Focus on input
     setTimeout(() => {
         messageInput.focus();
+        console.log('GreenDino ready! All buttons should work.');
     }, 500);
+});
+
+// ==================== CHAT FUNCTIONS ====================
+function initChat() {
+    // Load chat history from localStorage
+    const savedHistory = localStorage.getItem('greenDinoChatHistory');
+    if (savedHistory) {
+        chatHistory = JSON.parse(savedHistory);
+    }
+    
+    // Create new chat if no history exists
+    if (chatHistory.length === 0) {
+        currentChatId = generateId();
+        const welcomeChat = {
+            id: currentChatId,
+            title: "Chat Baru",
+            messages: [{
+                role: "assistant",
+                content: "🦕 <strong>Halo! Saya GreenDino AI Assistant!</strong>\n\nSaya menggunakan OpenAI API (ChatGPT) untuk membantu Anda.\n\n🔑 API Key sudah aktif dan siap digunakan.\nKirim pesan untuk memulai percakapan!",
+                timestamp: new Date().toISOString()
+            }],
+            timestamp: new Date().toISOString()
+        };
+        chatHistory.push(welcomeChat);
+        saveChatHistory();
+    } else {
+        currentChatId = chatHistory[chatHistory.length - 1].id;
+    }
+    
+    // Display current chat
+    displayCurrentChat();
 }
 
-// Format message with line breaks
-function formatMessage(text) {
-    return text.replace(/\n/g, '<br>');
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Add message to UI
-function addMessageToUI(content, sender) {
+function saveChatHistory() {
+    localStorage.setItem('greenDinoChatHistory', JSON.stringify(chatHistory));
+}
+
+function displayCurrentChat() {
+    chatContainer.innerHTML = '';
+    
+    const currentChat = chatHistory.find(chat => chat.id === currentChatId);
+    if (currentChat && currentChat.messages) {
+        currentChat.messages.forEach(msg => {
+            addMessageToUI(msg.content, msg.role);
+        });
+    }
+}
+
+function addMessageToUI(content, role) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
+    messageDiv.className = `message ${role === 'user' ? 'user-message' : 'ai-message'}`;
     
     const time = new Date().toLocaleTimeString('id-ID', {
         hour: '2-digit',
@@ -84,18 +140,12 @@ function addMessageToUI(content, sender) {
     
     chatContainer.appendChild(messageDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
-    
-    // Add to chat history
-    if (sender === 'user' || sender === 'ai') {
-        chatMessages.push({
-            role: sender === 'user' ? 'user' : 'assistant',
-            content: content,
-            timestamp: new Date().toISOString()
-        });
-    }
 }
 
-// Show loading animation
+function formatMessage(text) {
+    return text.replace(/\n/g, '<br>');
+}
+
 function showLoading() {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message ai-message';
@@ -115,64 +165,22 @@ function showLoading() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// Hide loading animation
 function hideLoading() {
     const loadingMsg = document.getElementById('loading-message');
     if (loadingMsg) loadingMsg.remove();
 }
 
-// Show notification
-function showNotification(message, type = 'info') {
-    // Remove existing notification
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
+// ==================== SEND MESSAGE FUNCTION ====================
+async function sendMessage() {
+    console.log('Send button clicked!');
+    
+    const message = messageInput.value.trim();
+    if (!message || isProcessing) {
+        console.log('Cannot send: empty message or processing');
+        return;
     }
     
-    // Create new notification
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 10px;
-        color: white;
-        font-weight: 500;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }
-    }, 3000);
-}
-
-// Adjust textarea height
-function adjustTextareaHeight() {
-    messageInput.style.height = 'auto';
-    const newHeight = Math.min(messageInput.scrollHeight, 120);
-    messageInput.style.height = newHeight + 'px';
-}
-
-// Send message to AI
-async function sendMessage() {
-    const message = messageInput.value.trim();
-    if (!message || isProcessing) return;
+    console.log('Sending message:', message.substring(0, 50) + '...');
     
     // Add user message to UI
     addMessageToUI(message, 'user');
@@ -185,27 +193,47 @@ async function sendMessage() {
     showLoading();
     isProcessing = true;
     sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     try {
-        // Prepare messages for API
+        // Get or create current chat
+        let currentChat = chatHistory.find(chat => chat.id === currentChatId);
+        if (!currentChat) {
+            currentChatId = generateId();
+            currentChat = {
+                id: currentChatId,
+                title: message.substring(0, 30) + (message.length > 30 ? '...' : ''),
+                messages: [],
+                timestamp: new Date().toISOString()
+            };
+            chatHistory.push(currentChat);
+        }
+        
+        // Add user message to chat
+        currentChat.messages.push({
+            role: "user",
+            content: message,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Prepare API messages
         const apiMessages = [
             {
                 role: "system",
                 content: "Anda adalah GreenDino, asisten AI dengan tema dinosaurus hijau yang lucu, ramah, dan pintar. Gunakan emoji dinosaurus 🦕 sesekali. Sapa dengan ramah dan bantu dengan baik."
-            },
-            ...chatMessages
-                .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-                .map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                }))
+            }
         ];
         
-        // Add current user message
-        apiMessages.push({
-            role: "user",
-            content: message
+        // Add conversation history (last 10 messages)
+        const recentMessages = currentChat.messages.slice(-10);
+        recentMessages.forEach(msg => {
+            apiMessages.push({
+                role: msg.role,
+                content: msg.content
+            });
         });
+        
+        console.log('Calling OpenAI API...');
         
         // Call OpenAI API
         const response = await fetch(API_URL, {
@@ -222,118 +250,108 @@ async function sendMessage() {
             })
         });
         
+        console.log('API Response status:', response.status);
+        
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            let errorMessage = `API error: ${response.status}`;
-            if (errorData.error?.message) {
-                errorMessage = errorData.error.message;
+            let errorMessage = `Error ${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.error?.message) {
+                    errorMessage = errorData.error.message;
+                }
+            } catch (e) {
+                // If response is not JSON
             }
-            
-            if (response.status === 401) {
-                errorMessage = "API Key tidak valid. Silakan periksa API Key Anda.";
-            } else if (response.status === 429) {
-                errorMessage = "Rate limit tercapai. Silakan coba lagi nanti.";
-            } else if (response.status === 402) {
-                errorMessage = "Pembayaran diperlukan. Silakan periksa saldo API Anda.";
-            }
-            
             throw new Error(errorMessage);
         }
         
         const data = await response.json();
         const aiResponse = data.choices[0].message.content;
         
-        // Remove loading
+        console.log('Got AI response:', aiResponse.substring(0, 50) + '...');
+        
+        // Hide loading
         hideLoading();
         
         // Add AI response to UI
-        addMessageToUI(aiResponse, 'ai');
+        addMessageToUI(aiResponse, 'assistant');
+        
+        // Add AI response to chat
+        currentChat.messages.push({
+            role: "assistant",
+            content: aiResponse,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Update chat timestamp
+        currentChat.timestamp = new Date().toISOString();
+        
+        // Save to localStorage
+        saveChatHistory();
         
         // Update API status
-        apiStatus.textContent = "Aktif";
-        apiStatus.className = "api-status-success";
+        apiStatus.textContent = "Aktif ✓";
+        apiStatus.className = "status-success";
+        
+        showNotification("Pesan terkirim!", "success");
         
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error sending message:', error);
         hideLoading();
         
         // Show error message
         addMessageToUI(
             `❌ <strong>Maaf, terjadi kesalahan!</strong><br><br>` +
             `<em>Detail: ${error.message}</em><br><br>` +
-            `Silakan periksa API Key Anda di pengaturan.`,
-            'ai'
+            `Silakan periksa API Key Anda atau coba lagi nanti.`,
+            'assistant'
         );
         
         // Update API status
         apiStatus.textContent = "Error";
-        apiStatus.className = "api-status-error";
+        apiStatus.className = "status-error";
         
-        showNotification(`Error: ${error.message}`, 'error');
+        showNotification(`Error: ${error.message}`, "error");
         
     } finally {
         isProcessing = false;
         sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
         messageInput.focus();
     }
 }
 
-// Clear chat
-function clearChat() {
-    if (chatContainer.children.length <= 1) return;
-    
-    if (confirm("Apakah Anda yakin ingin menghapus percakapan saat ini?")) {
-        // Clear chat container
-        chatContainer.innerHTML = '';
-        
-        // Clear chat messages
-        chatMessages = [];
-        
-        // Add new welcome message
-        addMessageToUI(
-            "🦕 <strong>Percakapan baru telah dimulai!</strong>\n\n" +
-            "Ada yang bisa saya bantu?",
-            'ai'
-        );
-        
-        showNotification("Percakapan telah dibersihkan", 'success');
+// ==================== API FUNCTIONS ====================
+function initApiKey() {
+    const savedApiKey = localStorage.getItem('greenDinoApiKey');
+    if (savedApiKey) {
+        API_KEY = savedApiKey;
+        apiKeyInput.value = savedApiKey;
+    } else {
+        API_KEY = DEFAULT_API_KEY;
+        apiKeyInput.value = DEFAULT_API_KEY;
+        localStorage.setItem('greenDinoApiKey', DEFAULT_API_KEY);
     }
 }
 
-// Show help
-function showHelp() {
-    addMessageToUI(
-        "🦕 <strong>Panduan GreenDino</strong><br><br>" +
-        "• <strong>Ketik pesan</strong> dan klik tombol kirim<br>" +
-        "• <strong>Tekan Enter</strong> untuk mengirim pesan<br>" +
-        "• <strong>Tekan Shift+Enter</strong> untuk baris baru<br>" +
-        "• <strong>Tombol Bersihkan</strong>: Mulai percakapan baru<br>" +
-        "• <strong>Tombol Test API</strong>: Cek status API Key<br>" +
-        "• <strong>Tombol Kunci (🔑)</strong>: Kelola API Key<br><br>" +
-        "🔧 <em>Untuk masalah API Key, gunakan tombol Test API.</em>",
-        'ai'
-    );
-}
-
-// Test API connection
-async function testApiConnection() {
-    if (!API_KEY) {
-        showNotification("API Key belum diisi", 'error');
+async function testApiKey() {
+    const keyToTest = apiKeyInput.value.trim() || API_KEY;
+    if (!keyToTest) {
+        showNotification("API Key tidak boleh kosong", "error");
         return;
     }
     
     testApiBtn.disabled = true;
     testApiBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
     apiStatus.textContent = "Testing...";
-    apiStatus.className = "api-status-loading";
+    apiStatus.className = "status-pending";
     
     try {
-        // Simple test request
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
+                'Authorization': `Bearer ${keyToTest}`
             },
             body: JSON.stringify({
                 model: "gpt-3.5-turbo",
@@ -344,449 +362,228 @@ async function testApiConnection() {
         
         if (response.ok) {
             apiStatus.textContent = "Aktif ✓";
-            apiStatus.className = "api-status-success";
-            showNotification("✅ API Key valid! Koneksi berhasil.", 'success');
+            apiStatus.className = "status-success";
+            showNotification("✅ API Key valid!", "success");
         } else {
-            const errorData = await response.json().catch(() => ({}));
-            apiStatus.textContent = "Error";
-            apiStatus.className = "api-status-error";
-            showNotification(`❌ API Key error: ${response.status}`, 'error');
+            apiStatus.textContent = "Tidak valid";
+            apiStatus.className = "status-error";
+            showNotification("❌ API Key tidak valid", "error");
         }
     } catch (error) {
         apiStatus.textContent = "Gagal";
-        apiStatus.className = "api-status-error";
-        showNotification(`❌ Gagal menghubungi API: ${error.message}`, 'error');
+        apiStatus.className = "status-error";
+        showNotification(`❌ Gagal menghubungi API: ${error.message}`, "error");
     } finally {
         testApiBtn.disabled = false;
-        testApiBtn.innerHTML = '<i class="fas fa-vial"></i> Test API';
+        testApiBtn.innerHTML = '<i class="fas fa-vial"></i> Test API Key';
     }
 }
 
-// Save API key
 function saveApiKey() {
-    const newApiKey = apiKeyInput.value.trim();
-    if (!newApiKey) {
-        showNotification("API Key tidak boleh kosong", 'error');
+    const newKey = apiKeyInput.value.trim();
+    if (!newKey) {
+        showNotification("API Key tidak boleh kosong", "error");
         return;
     }
     
-    API_KEY = newApiKey;
-    localStorage.setItem('greenDinoApiKey', newApiKey);
+    API_KEY = newKey;
+    localStorage.setItem('greenDinoApiKey', newKey);
     
-    showNotification("✅ API Key berhasil disimpan", 'success');
+    showNotification("✅ API Key berhasil disimpan", "success");
     
-    // Test the new API key
+    // Test the new key
     setTimeout(() => {
-        testApiConnection();
+        testApiKey();
     }, 1000);
 }
 
-// Use default API key
-function useDefaultApiKey() {
-    if (confirm("Gunakan API Key default? Key akan direset.")) {
+function toggleKeyVisibility() {
+    isKeyVisible = !isKeyVisible;
+    apiKeyInput.type = isKeyVisible ? 'text' : 'password';
+    showKeyBtn.innerHTML = isKeyVisible ? 
+        '<i class="fas fa-eye-slash"></i> Sembunyikan Key' : 
+        '<i class="fas fa-eye"></i> Tampilkan Key';
+}
+
+function resetApiKey() {
+    if (confirm("Reset API Key ke default?")) {
         API_KEY = DEFAULT_API_KEY;
         apiKeyInput.value = DEFAULT_API_KEY;
         localStorage.setItem('greenDinoApiKey', DEFAULT_API_KEY);
         
-        showNotification("✅ API Key direset ke default", 'success');
+        showNotification("✅ API Key direset ke default", "success");
         
-        // Test the API key
+        // Test the default key
         setTimeout(() => {
-            testApiConnection();
+            testApiKey();
         }, 1000);
     }
 }
 
-// Toggle API key visibility
-function toggleKeyVisibility() {
-    isApiKeyVisible = !isApiKeyVisible;
-    apiKeyInput.type = isApiKeyVisible ? 'text' : 'password';
+// ==================== PANEL FUNCTIONS ====================
+function openPanel(panel) {
+    panel.classList.add('active');
+}
+
+function closePanel(panel) {
+    panel.classList.remove('active');
+}
+
+function showNotification(message, type = "info") {
+    // Remove existing notification
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
     
-    if (isApiKeyVisible) {
-        toggleKeyVisibilityBtn.innerHTML = '<i class="fas fa-eye-slash"></        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    item.innerHTML = `
-        <div class="history-title">${chat.title || "Percakapan Tanpa Judul"}</div>
-        <div class="history-preview">${preview}</div>
-        <div class="history-date"><i class="far fa-clock"></i> ${dateStr}</div>
+    // Create new notification
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
     `;
     
-    item.addEventListener('click', () => {
-        if (chat.id !== currentChatId) {
-            loadChat(chat.id);
-            closePanel(historyPanel);
-        }
-    });
+    document.body.appendChild(notification);
     
-    return item;
-}
-
-// Load chat by ID
-function loadChat(chatId) {
-    const chat = chatHistory.find(c => c.id === chatId);
-    if (!chat) return;
-    
-    currentChatId = chatId;
-    renderChatMessages(chat.messages);
-    updateHistoryList();
-}
-
-// Render chat messages to UI
-function renderChatMessages(messages) {
-    chatContainer.innerHTML = '';
-    
-    messages.forEach(msg => {
-        addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'ai', msg.timestamp);
-    });
-    
+    // Auto remove after 3 seconds
     setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, 100);
-}
-
-// Add message to UI
-function addMessageToUI(content, sender, timestamp = null) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
-    
-    const avatarIcon = sender === 'user' ? 'fas fa-user' : 'fas fa-dragon';
-    const time = timestamp ? new Date(timestamp).toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit'
-    }) : new Date().toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    messageDiv.innerHTML = `
-        <div class="message-avatar">
-            <i class="${avatarIcon}"></i>
-        </div>
-        <div class="message-content">
-            <p>${formatMessage(content)}</p>
-            <div class="message-time">${time}</div>
-        </div>
-    `;
-    
-    chatContainer.appendChild(messageDiv);
-    
-    setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, 100);
-}
-
-// Format message with line breaks
-function formatMessage(text) {
-    return text.replace(/\n/g, '<br>');
-}
-
-// Show loading animation
-function showLoading() {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'message ai-message';
-    loadingDiv.id = 'loading-message';
-    
-    loadingDiv.innerHTML = `
-        <div class="message-avatar">
-            <i class="fas fa-dragon"></i>
-        </div>
-        <div class="message-content">
-            <div class="loading">
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-            </div>
-        </div>
-    `;
-    
-    chatContainer.appendChild(loadingDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-// Hide loading animation
-function hideLoading() {
-    const loadingMsg = document.getElementById('loading-message');
-    if (loadingMsg) {
-        loadingMsg.remove();
-    }
-}
-
-// Send message to AI
-async function sendMessage() {
-    const message = messageInput.value.trim();
-    if (!message || isProcessing) return;
-    
-    addMessageToUI(message, 'user');
-    messageInput.value = '';
-    adjustTextareaHeight();
-    
-    showLoading();
-    isProcessing = true;
-    sendBtnMini.disabled = true;
-    sendBtnMain.disabled = true;
-    
-    try {
-        let currentChat = chatHistory.find(chat => chat.id === currentChatId);
-        if (!currentChat) {
-            currentChat = {
-                id: currentChatId,
-                title: message.substring(0, 30) + (message.length > 30 ? "..." : ""),
-                messages: [],
-                timestamp: new Date().toISOString()
-            };
-            chatHistory.push(currentChat);
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease forwards';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
         }
-        
-        currentChat.messages.push({
-            role: "user",
-            content: message,
-            timestamp: new Date().toISOString()
-        });
-        
-        if (currentChat.messages.length === 1) {
-            currentChat.title = message.substring(0, 30) + (message.length > 30 ? "..." : "");
-        }
-        
-        const apiMessages = currentChat.messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-        }));
-        
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "deepseek-chat",
-                messages: apiMessages,
-                max_tokens: 2000,
-                temperature: 0.7
-            })
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
-        }
-        
-        const data = await response.json();
-        const aiResponse = data.choices[0].message.content;
-        
-        hideLoading();
-        addMessageToUI(aiResponse, 'ai');
-        
-        currentChat.messages.push({
-            role: "assistant",
-            content: aiResponse,
-            timestamp: new Date().toISOString()
-        });
-        
-        currentChat.timestamp = new Date().toISOString();
-        saveChatHistory();
-        updateHistoryList();
-        
-    } catch (error) {
-        console.error('Error:', error);
-        hideLoading();
-        
-        addMessageToUI(
-            `❌ <strong>Maaf, terjadi kesalahan!</strong><br><br>
-            <em>Detail: ${error.message}</em><br><br>
-            Silakan periksa API Key Anda.`,
-            'ai'
-        );
-        
-        let currentChat = chatHistory.find(chat => chat.id === currentChatId);
-        if (currentChat) {
-            currentChat.timestamp = new Date().toISOString();
-            saveChatHistory();
-            updateHistoryList();
-        }
-    } finally {
-        isProcessing = false;
-        sendBtnMini.disabled = false;
-        sendBtnMain.disabled = false;
-        messageInput.focus();
-    }
+    }, 3000);
 }
 
-// Adjust textarea height
 function adjustTextareaHeight() {
     messageInput.style.height = 'auto';
     const newHeight = Math.min(messageInput.scrollHeight, 120);
     messageInput.style.height = newHeight + 'px';
 }
 
-// Clear chat
+// ==================== FEATURE FUNCTIONS ====================
 function clearChat() {
-    if (chatContainer.children.length <= 1) return;
+    if (chatContainer.children.length === 0) return;
     
-    if (confirm("Apakah Anda yakin ingin menghapus percakapan saat ini?")) {
-        currentChatId = generateChatId();
-        chatContainer.innerHTML = '';
-        
-        addMessageToUI(
-            "🦕 <strong>Halo! GreenDino di sini!</strong><br><br>Percakapan baru telah dimulai.",
-            'ai'
-        );
-        
-        const newChat = {
+    if (confirm("Bersihkan percakapan ini?")) {
+        const currentChat = chatHistory.find(chat => chat.id === currentChatId);
+        if (currentChat) {
+            currentChat.messages = [];
+            currentChat.messages.push({
+                role: "assistant",
+                content: "🦕 Percakapan telah dibersihkan. Ada yang bisa saya bantu?",
+                timestamp: new Date().toISOString()
+            });
+            saveChatHistory();
+            displayCurrentChat();
+            showNotification("Percakapan dibersihkan", "success");
+        }
+    }
+}
+
+function clearAllChats() {
+    if (chatHistory.length === 0) return;
+    
+    if (confirm("Hapus SEMUA percakapan?")) {
+        chatHistory = [];
+        currentChatId = generateId();
+        const welcomeChat = {
             id: currentChatId,
-            title: "Percakapan Baru",
+            title: "Chat Baru",
             messages: [{
                 role: "assistant",
-                content: "🦕 Halo! GreenDino di sini! Percakapan baru telah dimulai.",
+                content: "🦕 <strong>Semua percakapan telah dihapus!</strong>\n\nMulai percakapan baru!",
                 timestamp: new Date().toISOString()
             }],
             timestamp: new Date().toISOString()
         };
-        
-        chatHistory.push(newChat);
+        chatHistory.push(welcomeChat);
         saveChatHistory();
-        updateHistoryList();
+        displayCurrentChat();
+        showNotification("Semua percakapan dihapus", "success");
     }
 }
 
-// Voice input
-function voiceInput() {
-    addMessageToUI("🎤 Fitur suara akan segera hadir! Silakan ketik pesan Anda.", 'ai');
-}
-
-// Show help
 function showHelp() {
-    const helpText = `
-        <strong>🦕 Panduan GreenDino</strong><br><br>
-        
-        <strong>Cara Menggunakan:</strong><br>
-        • Ketik pesan dan klik tombol kirim<br>
-        • Tekan Enter untuk mengirim<br>
-        • Ganti API Key di panel pengaturan<br>
-        • Akses riwayat percakapan<br><br>
-        
-        <strong>Tombol:</strong><br>
-        • <i class="fas fa-broom"></i> Bersihkan: Mulai percakapan baru<br>
-        • <i class="fas fa-microphone"></i> Suara: Input suara<br>
-        • <i class="fas fa-question-circle"></i> Bantuan: Panduan ini
-    `;
-    
-    addMessageToUI(helpText, 'ai');
+    addMessageToUI(
+        "🦕 <strong>Panduan GreenDino</strong><br><br>" +
+        "• <strong>Ketik pesan</strong> dan klik tombol kirim<br>" +
+        "• <strong>Tekan Enter</strong> untuk mengirim pesan<br>" +
+        "• <strong>Tombol Bersihkan</strong>: Bersihkan chat ini<br>" +
+        "• <strong>Tombol Suara</strong>: Coming soon!<br>" +
+        "• <strong>Tombol Bantuan</strong>: Tampilkan panduan ini<br>" +
+        "• <strong>Tombol Contoh</strong>: Lihat contoh pertanyaan<br>" +
+        "• <strong>Tombol History</strong>: Lihat riwayat chat<br>" +
+        "• <strong>Tombol API Key</strong>: Kelola API Key<br>" +
+        "• <strong>Tombol Menu</strong>: Fitur tambahan<br><br>" +
+        "🔧 <em>Semua tombol sudah aktif dan berfungsi!</em>",
+        'assistant'
+    );
 }
 
-// Open panel
-function openPanel(panel) {
-    panel.classList.add('active');
+function showExamples() {
+    addMessageToUI(
+        "💡 <strong>Contoh Pertanyaan:</strong><br><br>" +
+        "1. 'Ceritakan kisah tentang dinosaurus hijau!'<br>" +
+        "2. 'Bantu saya membuat rencana belajar coding'<br>" +
+        "3. 'Apa saja fakta menarik tentang AI?'<br>" +
+        "4. 'Buat puisi tentang alam dan teknologi'<br>" +
+        "5. 'Jelaskan cara kerja neural network'<br>" +
+        "6. 'Berikan contoh kode HTML sederhana'<br>" +
+        "7. 'Bagaimana cara mengurangi jejak karbon?'<br>" +
+        "8. 'Tulis dialog lucu antara dua dinosaurus'<br><br>" +
+        "Coba salin salah satu atau buat pertanyaan Anda sendiri!",
+        'assistant'
+    );
 }
 
-// Close panel
-function closePanel(panel) {
-    panel.classList.remove('active');
+function voiceInput() {
+    showNotification("Fitur suara akan segera hadir! 🎤", "info");
 }
 
-// Save API key
-function saveApiKey() {
-    const newApiKey = apiKeyInput.value.trim();
-    if (!newApiKey) {
-        alert("API Key tidak boleh kosong!");
-        return;
-    }
-    
-    API_KEY = newApiKey;
-    localStorage.setItem('greenDinoApiKey', newApiKey);
-    
-    addMessageToUI("✅ API Key berhasil diperbarui!", 'ai');
-    closePanel(apiPanel);
-}
-
-// Change theme
 function changeTheme() {
     const themes = [
-        { name: "Hijau Dinosaurus", primary: "#2e7d32" },
-        { name: "Biru Laut", primary: "#1565c0" },
-        { name: "Ungu Ajaib", primary: "#6a1b9a" },
-        { name: "Oranye Cerah", primary: "#ef6c00" }
+        { name: "Hijau Dinosaurus", color: "#2e7d32" },
+        { name: "Biru Laut", color: "#1565c0" },
+        { name: "Ungu Magis", color: "#6a1b9a" },
+        { name: "Oranye Cerah", color: "#ef6c00" }
     ];
     
-    let currentThemeIndex = 0;
     const root = document.documentElement;
-    
     const currentColor = getComputedStyle(root).getPropertyValue('--primary-green').trim();
+    
+    let currentIndex = 0;
     themes.forEach((theme, index) => {
-        if (theme.primary === currentColor) {
-            currentThemeIndex = index;
+        if (theme.color === currentColor) {
+            currentIndex = index;
         }
     });
     
-    const nextThemeIndex = (currentThemeIndex + 1) % themes.length;
-    const nextTheme = themes[nextThemeIndex];
+    const nextIndex = (currentIndex + 1) % themes.length;
+    const nextTheme = themes[nextIndex];
     
-    root.style.setProperty('--primary-green', nextTheme.primary);
-    root.style.setProperty('--light-green', lightenColor(nextTheme.primary, 20));
-    root.style.setProperty('--dark-green', darkenColor(nextTheme.primary, 15));
-    root.style.setProperty('--dino-green', nextTheme.primary);
-    root.style.setProperty('--accent-green', lightenColor(nextTheme.primary, 30));
+    root.style.setProperty('--primary-green', nextTheme.color);
     
-    addMessageToUI(`🎨 Tema diubah ke: ${nextTheme.name}`, 'ai');
+    addMessageToUI(`🎨 Tema diubah ke: ${nextTheme.name}`, 'assistant');
     closePanel(menuPanel);
 }
 
-// Lighten color
-function lightenColor(color, percent) {
-    const num = parseInt(color.replace("#", ""), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = (num >> 16) + amt;
-    const G = (num >> 8 & 0x00FF) + amt;
-    const B = (num & 0x0000FF) + amt;
-    
-    return "#" + (
-        0x1000000 +
-        (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
-        (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
-        (B < 255 ? (B < 1 ? 0 : B) : 255)
-    ).toString(16).slice(1);
-}
-
-// Darken color
-function darkenColor(color, percent) {
-    const num = parseInt(color.replace("#", ""), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = (num >> 16) - amt;
-    const G = (num >> 8 & 0x00FF) - amt;
-    const B = (num & 0x0000FF) - amt;
-    
-    return "#" + (
-        0x1000000 +
-        (R > 0 ? (R < 255 ? R : 255) : 0) * 0x10000 +
-        (G > 0 ? (G < 255 ? G : 255) : 0) * 0x100 +
-        (B > 0 ? (B < 255 ? B : 255) : 0)
-    ).toString(16).slice(1);
-}
-
-// Export chat
 function exportChat() {
     const currentChat = chatHistory.find(chat => chat.id === currentChatId);
     if (!currentChat || currentChat.messages.length === 0) {
-        addMessageToUI("Tidak ada percakapan untuk diekspor.", 'ai');
+        showNotification("Tidak ada chat untuk diekspor", "error");
         return;
     }
     
-    let exportText = `GreenDino Chat Export\n`;
-    exportText += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n`;
-    exportText += `====================\n\n`;
+    let exportText = "=== GreenDino Chat Export ===\n";
+    exportText += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n\n`;
     
     currentChat.messages.forEach(msg => {
         const sender = msg.role === 'user' ? 'Anda' : 'GreenDino';
-        const time = new Date(msg.timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        exportText += `[${time}] ${sender}:\n`;
-        exportText += `${msg.content}\n\n`;
+        const time = new Date(msg.timestamp).toLocaleTimeString('id-ID');
+        exportText += `[${time}] ${sender}:\n${msg.content}\n\n`;
     });
     
     const blob = new Blob([exportText], { type: 'text/plain' });
@@ -799,102 +596,109 @@ function exportChat() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    addMessageToUI("📄 Percakapan telah diekspor!", 'ai');
-    closePanel(menuPanel);
+    showNotification("Chat berhasil diekspor!", "success");
 }
 
-// Show settings
-function showSettings() {
-    const settingsText = `
-        <strong>⚙️ Pengaturan GreenDino</strong><br><br>
-        
-        <strong>Pengaturan AI:</strong><br>
-        • Model: DeepSeek Chat<br>
-        • Suhu: 0.7<br>
-        • Token Maks: 2000<br><br>
-        
-        <strong>Fitur:</strong><br>
-        • Riwayat Chat<br>
-        • Ekspor Chat<br>
-        • Ganti Tema<br>
-        • Kelola API Key
-    `;
-    
-    addMessageToUI(settingsText, 'ai');
-    closePanel(menuPanel);
+function showAbout() {
+    addMessageToUI(
+        "🦕 <strong>Tentang GreenDino</strong><br><br>" +
+        "Versi: 4.0 (Semua Tombol Work!)<br>" +
+        "Dibuat oleh: DinoIjoNPC<br>" +
+        "Tema: Hijau Dinosaurus<br>" +
+        "AI Provider: OpenAI (ChatGPT)<br>" +
+        "Model: gpt-3.5-turbo<br><br>" +
+        "Fitur:<br>" +
+        "✅ Chat dengan AI<br>" +
+        "✅ Kelola API Key<br>" +
+        "✅ Riwayat Percakapan<br>" +
+        "✅ Ganti Tema<br>" +
+        "✅ Ekspor Chat<br>" +
+        "✅ Semua tombol WORK!<br><br>" +
+        "❤️ Terima kasih telah menggunakan GreenDino!",
+        'assistant'
+    );
 }
 
-// Copy script
 function copyScript() {
-    const scriptToCopy = `<!-- GreenDino AI Chat Assistant -->\n<!-- Dibuat oleh DinoIjoNPC -->\n<!-- API Key: ${API_KEY.substring(0, 10)}... -->`;
+    const scriptText = `<!-- GreenDino AI Assistant - Dibuat oleh DinoIjoNPC -->
+<!-- Semua tombol WORK! API Key: ${API_KEY.substring(0, 10)}... -->
+<!-- https://github.com/yourusername/greendino -->`;
     
-    navigator.clipboard.writeText(scriptToCopy)
-        .then(() => {
-            const originalText = copyScriptBtn.innerHTML;
-            copyScriptBtn.innerHTML = '<i class="fas fa-check"></i> Script Disalin!';
-            copyScriptBtn.style.background = 'linear-gradient(to right, #4caf50, #66bb6a)';
-            
-            setTimeout(() => {
-                copyScriptBtn.innerHTML = originalText;
-                copyScriptBtn.style.background = 'linear-gradient(to right, var(--primary-green), var(--dino-green))';
-            }, 2000);
-            
-            addMessageToUI("📋 Script telah disalin!", 'ai');
-        })
-        .catch(err => {
-            console.error('Gagal:', err);
-            addMessageToUI("❌ Gagal menyalin script.", 'ai');
-        });
+    navigator.clipboard.writeText(scriptText).then(() => {
+        showNotification("Script berhasil disalin!", "success");
+    }).catch(err => {
+        showNotification("Gagal menyalin script", "error");
+    });
 }
 
-// Event Listeners
-sendBtnMini.addEventListener('click', sendMessage);
-sendBtnMain.addEventListener('click', sendMessage);
-
-messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+function refreshApp() {
+    if (confirm("Refresh aplikasi?")) {
+        location.reload();
     }
-});
+}
 
-messageInput.addEventListener('input', adjustTextareaHeight);
-
-clearBtn.addEventListener('click', clearChat);
-voiceBtn.addEventListener('click', voiceInput);
-helpBtn.addEventListener('click', showHelp);
-
-historyBtn.addEventListener('click', () => openPanel(historyPanel));
-apiBtn.addEventListener('click', () => openPanel(apiPanel));
-menuBtn.addEventListener('click', () => openPanel(menuPanel));
-
-closeHistoryPanel.addEventListener('click', () => closePanel(historyPanel));
-closeApiPanel.addEventListener('click', () => closePanel(apiPanel));
-closeMenuPanel.addEventListener('click', () => closePanel(menuPanel));
-
-saveApiBtn.addEventListener('click', saveApiKey);
-changeThemeBtn.addEventListener('click', changeTheme);
-exportChatBtn.addEventListener('click', exportChat);
-settingsBtn.addEventListener('click', showSettings);
-copyScriptBtn.addEventListener('click', copyScript);
-
-// Close panels when clicking outside
-document.addEventListener('click', (e) => {
-    if (!historyPanel.contains(e.target) && !historyBtn.contains(e.target)) {
-        closePanel(historyPanel);
-    }
-    if (!apiPanel.contains(e.target) && !apiBtn.contains(e.target)) {
-        closePanel(apiPanel);
-    }
-    if (!menuPanel.contains(e.target) && !menuBtn.contains(e.target)) {
+// ==================== EVENT LISTENERS SETUP ====================
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
+    // Send message events
+    sendBtn.addEventListener('click', sendMessage);
+    
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    messageInput.addEventListener('input', adjustTextareaHeight);
+    
+    // Feature buttons
+    clearBtn.addEventListener('click', clearChat);
+    voiceBtn.addEventListener('click', voiceInput);
+    helpBtn.addEventListener('click', showHelp);
+    exampleBtn.addEventListener('click', showExamples);
+    copyScriptBtn.addEventListener('click', copyScript);
+    
+    // Header buttons
+    historyBtn.addEventListener('click', () => openPanel(historyPanel));
+    apiBtn.addEventListener('click', () => openPanel(apiPanel));
+    menuBtn.addEventListener('click', () => openPanel(menuPanel));
+    
+    // Close panel buttons
+    closeHistoryBtn.addEventListener('click', () => closePanel(historyPanel));
+    closeApiBtn.addEventListener('click', () => closePanel(apiPanel));
+    closeMenuBtn.addEventListener('click', () => closePanel(menuPanel));
+    
+    // API panel buttons
+    saveApiBtn.addEventListener('click', saveApiKey);
+    testApiBtn.addEventListener('click', testApiKey);
+    showKeyBtn.addEventListener('click', toggleKeyVisibility);
+    resetKeyBtn.addEventListener('click', resetApiKey);
+    
+    // Menu panel buttons
+    themeBtn.addEventListener('click', changeTheme);
+    exportBtn.addEventListener('click', exportChat);
+    settingsBtn.addEventListener('click', () => {
+        addMessageToUI("⚙️ <strong>Pengaturan GreenDino</strong><br><br>• AI Model: gpt-3.5-turbo<br>• Max Tokens: 1000<br>• Temperature: 0.7<br>• API Status: Aktif", 'assistant');
         closePanel(menuPanel);
-    }
-});
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    initChatHistory();
-    adjustTextareaHeight();
-    messageInput.focus();
-    messageInput.style.height = '60px';
-});
+    });
+    aboutBtn.addEventListener('click', showAbout);
+    clearAllBtn.addEventListener('click', clearAllChats);
+    refreshBtn.addEventListener('click', refreshApp);
+    
+    // Close panels when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!historyPanel.contains(e.target) && !historyBtn.contains(e.target)) {
+            closePanel(historyPanel);
+        }
+        if (!apiPanel.contains(e.target) && !apiBtn.contains(e.target)) {
+            closePanel(apiPanel);
+        }
+        if (!menuPanel.contains(e.target) && !menuBtn.contains(e.target)) {
+            closePanel(menuPanel);
+        }
+    });
+    
+    console.log('All event listeners set up!');
+}
