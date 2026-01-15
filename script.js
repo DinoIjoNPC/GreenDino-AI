@@ -1,5 +1,5 @@
 // API Configuration
-let API_KEY = "sk-3206ed4039424e71bf9f41325161fcd1";
+let API_KEY = "sk-7cdd9c1d10804217a6cf6fd49c43e0f8";
 const API_URL = "https://api.deepseek.com/v1/chat/completions";
 
 // DOM Elements
